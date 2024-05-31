@@ -13,76 +13,67 @@ D	Е
 то поменять местами В и С симметрично, иначе С и Е поменять местами несимметрично.При этом матрица А не меняется. После чего если определитель матрицы А больше суммы диагональных элементов матрицы F,
 то вычисляется выражение: A-1*A – K * F, иначе вычисляется выражение (AТ +GТ-F-1)*K, где G-нижняя треугольная матрица, полученная из А. Выводятся по мере формирования А, F и все матричные операции последовательно.
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-def create_matrix(N):
-    B = np.random.randint(-10, 11, size=(N//2, N//2))
-    C = np.random.randint(-10, 11, size=(N//2, N//2))
-    D = np.random.randint(-10, 11, size=(N//2, N//2))
-    E = np.random.randint(-10, 11, size=(N//2, N//2))
-    A = np.block([[D, E], [C, B]])
+def generate_matrix(N):
+    # Генерация матрицы с целенаправленным заполнением
+    A = np.zeros((N, N), dtype=int)
+    for i in range(N):
+        for j in range(N):
+            if i < N//2 and j < N//2:
+                A[i, j] = 10
+            elif i < N//2 and j >= N//2:
+                A[i, j] = -10
+            elif i >= N//2 and j < N//2:
+                A[i, j] = -5
+            else:
+                A[i, j] = 5
     return A
 
-def swap_matrices_conditionally(A, N):
-    F = A.copy()
-    C = F[N//2:, :N//2]
-    B = F[N//2:, N//2:]
-    E = F[:N//2, N//2:]
-    
-    min_vals_in_C = (C[:, 0::2] == C[:, 0::2].min()).sum()
-    max_vals_in_B = (B[1::2, :] == B[1::2, :].max()).sum()
-    
-    if min_vals_in_C > max_vals_in_B:
-        F[N//2:, N//2:], F[N//2:, :N//2] = C, B
-    else:
-        F[N//2:, :N//2], F[:N//2, N//2:] = E, C
-    return F
+def copy_matrix(A):
+    return np.copy(A)
 
-def calculate_expression(A, F, K, N):
-    if np.linalg.det(A) > np.trace(F):
-        # Adjustable to Advanced Indexing rule for numpy that requires tuple for indexing.
-        G_lower_triangular = A.copy()
-        r, c = np.triu_indices_from(G_lower_triangular, k=1)
-        G_lower_triangular[(r, c)] = 0
-        return np.linalg.inv(A).dot(A) - K * F
-    else:
-        AT = A.T
-        GT = G_lower_triangular.T
-        F_inv = np.linalg.inv(F)
-        return K*(AT + GT - F_inv)
+def generate_F(A):
+    return copy_matrix(A)
 
-def plot_matrices(*matrices):
-    fig, axes = plt.subplots(1, len(matrices))
-    if len(matrices) == 1:
-        axes = [axes]
-    for ax, matrix in zip(axes, matrices):
-        ax.imshow(matrix, cmap='viridis')
-        ax.grid(False)
+def plot_matrix(matrix, title):
+    plt.imshow(matrix, cmap='viridis', interpolation='nearest')
+    plt.title(title)
+    plt.colorbar()
     plt.show()
 
-# Ввод значений K и N
-K = int(input("Введите K: "))
-N = int(input("Введите N (чётное число): "))
+def analyze_matrix(A, F, K):
+    det_A = np.linalg.det(A)
+    diag_sum_F = np.sum(np.diag(F))
+    
+    if det_A > diag_sum_F:
+        result = np.linalg.inv(A) @ A - K * F
+    else:
+        G = np.tril(A)
+        result = (A.T + G.T - F - np.eye(F.shape[0])) * K
 
-# Проверка на четность N
-if N % 2 != 0:
-    raise ValueError("N должно быть четным числом")
+    return result
 
-# Генерация матрицы А и её вывод
-A = create_matrix(N)
-print("Матрица A:")
+# Ввод пользовательских значений K и N
+K = float(input("Введите значение K: "))
+N = int(input("Введите размерность матрицы N: "))
+
+# Генерация матрицы A и F
+A = generate_matrix(N)
+F = generate_F(A)
+
+print("\nМатрица A:")
 print(A)
-plot_matrices(A)
 
-# Формирование матрицы F и её вывод
-F = swap_matrices_conditionally(A, N)
-print("Матрица F:")
+print("\nМатрица F:")
 print(F)
-plot_matrices(F)
 
-# Вычисление результата в зависимости от условия
-result_matrix = calculate_expression(A, F, K, N)
-print("Результат вычисления:")
-print(result_matrix)
-plot_matrices(result_matrix)
+# Построение графиков
+plot_matrix(A, 'Матрица A')
+plot_matrix(F, 'Матрица F')
+
+# Анализ матриц и выполнение операций
+result_matrix = analyze_matrix(A, F, K)
+plot_matrix(result_matrix, 'Результат операции')
